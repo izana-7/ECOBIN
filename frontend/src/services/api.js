@@ -1,7 +1,10 @@
 import axios from 'axios';
 
+// Configurable API base URL for production Netlify deployment
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
