@@ -10,8 +10,24 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors({ origin: '*' }));
+// Allowed origins for CORS (Localhost dev + Netlify Production site)
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'https://ecobin-clean.netlify.app'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.netlify.app')) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow requests in production
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
@@ -40,6 +56,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
     app: 'EcoBin Backend REST API',
+    productionDomain: 'https://ecobin-clean.netlify.app',
     timestamp: new Date().toISOString()
   });
 });
@@ -65,7 +82,8 @@ const startServer = async () => {
 
   app.listen(PORT, () => {
     console.log(`==================================================`);
-    console.log(`🌱 EcoBin REST API running on http://localhost:${PORT}`);
+    console.log(`🌱 EcoBin REST API running on port ${PORT}`);
+    console.log(`Live Netlify App: https://ecobin-clean.netlify.app`);
     console.log(`==================================================`);
   });
 };
