@@ -3,22 +3,34 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const WasteReport = require('../models/WasteReport');
 const MissionSubmission = require('../models/MissionSubmission');
+const EcoPointTransaction = require('../models/EcoPointTransaction');
+const Notification = require('../models/Notification');
 const { JWT_SECRET } = require('../middleware/auth');
-const { calculateLevel } = require('../services/gamificationService');
 
 const register = async (req, res) => {
   try {
     const { name, email, phone, department, password, confirmPassword } = req.body;
 
-    if (!name || !email || !password) {
+    const trimmedName = typeof name === 'string' ? name.trim() : '';
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+
+    if (!trimmedName || !normalizedEmail || !password) {
       return res.status(400).json({ message: 'Name, email, and password are required.' });
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return res.status(400).json({ message: 'Please provide a valid email address.' });
+    }
+
+    if (String(password).length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters long.' });
     }
 
     if (password !== confirmPassword) {
       return res.status(400).json({ message: 'Passwords do not match.' });
     }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(400).json({ message: 'User with this email already exists.' });
     }
@@ -27,16 +39,38 @@ const register = async (req, res) => {
     const passwordHash = await bcrypt.hash(password, salt);
 
     const user = await User.create({
-      name,
-      email: email.toLowerCase(),
-      phone: phone || '',
-      department: department || 'Computer Science',
+      name: trimmedName,
+      email: normalizedEmail,
+      phone: typeof phone === 'string' ? phone.trim() : '',
+      department: typeof department === 'string' && department.trim() ? department.trim() : 'General',
       passwordHash,
       role: 'user',
       ecoPoints: 100, // Starter welcome bonus
       level: 'Eco Starter',
       badges: ['first_report']
     });
+
+    // Record welcome bonus and initial badge for ledger/notification consistency
+    await EcoPointTransaction.create({
+      userId: user._id,
+      points: 100,
+      reason: 'Welcome Eco Starter Bonus'
+    });
+
+    await Notification.create([
+      {
+        userId: user._id,
+        title: '+100 Eco Points Earned! ⭐',
+        message: 'You earned 100 points for: Welcome Eco Starter Bonus. Total points: 100',
+        type: 'points_awarded'
+      },
+      {
+        userId: user._id,
+        title: 'Badge Unlocked: First Report 🌱',
+        message: 'Submitted your first campus waste report',
+        type: 'badge_unlocked'
+      }
+    ]);
 
     const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
@@ -57,6 +91,9 @@ const register = async (req, res) => {
     });
   } catch (err) {
     console.error('Register error:', err);
+    if (err && err.code === 11000) {
+      return res.status(400).json({ message: 'User with this email already exists.' });
+    }
     res.status(500).json({ message: 'Server error during registration.' });
   }
 };

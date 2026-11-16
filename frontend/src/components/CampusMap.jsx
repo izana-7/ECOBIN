@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { MapContainer, TileLayer, Marker, Popup, LayersControl } from 'react-leaflet';
 import L from 'leaflet';
-import { CheckCircle2, AlertTriangle, XCircle, Map, Layers } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, XCircle, Map } from 'lucide-react';
 
 const { BaseLayer } = LayersControl;
 
@@ -30,17 +30,23 @@ export default function CampusMap({ bins = [], selectedBin = null, onSelectBin }
   // Center map on Pune City, Maharashtra (COEP / Shivajinagar Area)
   const puneCenter = [18.5204, 73.8567];
 
-  // Optional custom API token for Mapbox / Google Maps if provided in .env
+  // Optional custom map provider keys/tokens (if provided in .env)
+  const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const customMapKey = import.meta.env.VITE_MAP_API_KEY || import.meta.env.VITE_MAPBOX_TOKEN;
+  const providerLabel = googleMapsApiKey
+    ? 'Google Maps (API Key Configured) + OSM/Esri'
+    : customMapKey
+      ? 'Custom Map Token + Google/OSM/Esri Layers'
+      : 'Google Maps + OpenStreetMap + Esri (Zero-Config)';
 
   return (
     <div className="w-full h-[480px] rounded-3xl overflow-hidden border border-slate-800 relative shadow-2xl space-y-2">
       
-      {/* Map API Status Header */}
-      <div className="absolute top-3 left-3 z-[1000] glass-panel px-3 py-1.5 rounded-xl border border-slate-700 text-[11px] font-bold text-slate-200 flex items-center gap-2 shadow-lg">
-        <Map className="w-3.5 h-3.5 text-eco-400" />
-        <span>Map Provider: {customMapKey ? 'Custom Map API Active' : 'OpenStreetMap Pune (Zero-Config)'}</span>
-        {customMapKey && <span className="w-2 h-2 rounded-full bg-eco-400 animate-pulse" />}
+      {/* Map Provider Status Header */}
+      <div className="absolute top-3 left-3 z-[1000] glass-panel px-3 py-1.5 rounded-xl border border-slate-700 text-[11px] font-bold text-slate-200 flex items-center gap-2 shadow-lg max-w-[85%]">
+        <Map className="w-3.5 h-3.5 text-eco-400 shrink-0" />
+        <span className="truncate">Map Providers: {providerLabel}</span>
+        {(googleMapsApiKey || customMapKey) && <span className="w-2 h-2 rounded-full bg-eco-400 animate-pulse shrink-0" />}
       </div>
 
       <MapContainer
@@ -51,11 +57,51 @@ export default function CampusMap({ bins = [], selectedBin = null, onSelectBin }
       >
         <LayersControl position="topright">
           
-          {/* Default CartoDB Voyager Streets */}
-          <BaseLayer checked name="Pune Streets (Voyager)">
+          {/* OpenStreetMap-based streets (default) */}
+          <BaseLayer checked name="Pune Streets (OpenStreetMap)">
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+          </BaseLayer>
+
+          <BaseLayer name="Pune Streets (Voyager)">
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
               url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            />
+          </BaseLayer>
+
+          {/* Google Maps layers (tile-based views, no API key required) */}
+          <BaseLayer name="Google Maps (Streets)">
+            <TileLayer
+              attribution='Map data &copy; Google'
+              url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+              subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+            />
+          </BaseLayer>
+
+          <BaseLayer name="Google Maps (Satellite)">
+            <TileLayer
+              attribution='Imagery &copy; Google'
+              url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+              subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+            />
+          </BaseLayer>
+
+          <BaseLayer name="Google Maps (Hybrid)">
+            <TileLayer
+              attribution='Imagery &copy; Google'
+              url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
+              subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+            />
+          </BaseLayer>
+
+          <BaseLayer name="Google Maps (Terrain)">
+            <TileLayer
+              attribution='Map data &copy; Google'
+              url="https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}"
+              subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
             />
           </BaseLayer>
 
@@ -68,9 +114,9 @@ export default function CampusMap({ bins = [], selectedBin = null, onSelectBin }
           </BaseLayer>
 
           {/* Satellite Hybrid Layer */}
-          <BaseLayer name="Satellite Hybrid View">
+          <BaseLayer name="Esri Satellite (Hybrid)">
             <TileLayer
-              attribution='&copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+              attribution='Tiles &copy; Esri'
               url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
             />
           </BaseLayer>

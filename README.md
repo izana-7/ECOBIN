@@ -90,19 +90,24 @@
 ```bash
 cd backend
 npm install
-node server.js
+npm start
 ```
-*Note: The backend automatically launches an embedded MongoDB instance if local MongoDB is unavailable, and automatically populates initial demo data on first launch!*
+*Note: The backend automatically launches an embedded MongoDB instance if local MongoDB is unavailable, and automatically populates initial demo data on first launch! Backend runs on `http://localhost:5000`.*
 
 ### 2. Set Up Frontend
 
 ```bash
-cd ../frontend
+cd frontend
 npm install
 npm run dev
 ```
 
-Open your browser at: **`http://localhost:3000`** (Backend REST API runs on `http://localhost:5000`).
+Open your browser at: **`http://localhost:3000`** (Vite proxies `/api` to `http://localhost:5000` in dev).
+
+## 🗺️ Maps (Google Maps + other providers)
+
+- The **Campus Bin Locator** uses Leaflet with multiple map layers out-of-the-box, including **Google Maps (Streets/Satellite/Hybrid/Terrain)**, **OpenStreetMap**, **Carto Voyager/Dark**, and **Esri Satellite** (no API key required for basic usage).
+- Optional environment variables in `frontend/.env` (see `frontend/.env.example`): `VITE_GOOGLE_MAPS_API_KEY`, `VITE_MAP_API_KEY`, `VITE_MAPBOX_TOKEN`.
 
 ---
 

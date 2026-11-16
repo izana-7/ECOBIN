@@ -20,7 +20,11 @@ export default function LoginPage() {
       await login(email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to login. Please check credentials.');
+      if (!err.response) {
+        setError('Cannot reach server. Please ensure the backend API is running and try again.');
+      } else {
+        setError(err.response?.data?.message || 'Failed to login. Please check credentials.');
+      }
     } finally {
       setLoading(false);
     }
